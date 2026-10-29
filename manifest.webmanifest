@@ -1,0 +1,14 @@
+{
+  "name": "일기",
+  "short_name": "일기",
+  "description": "iPhone에서 쓴 일기를 내 GitHub 저장소에 바로 저장합니다.",
+  "lang": "ko",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4ebdc",
+  "theme_color": "#f4ebdc",
+  "icons": [
+    { "src": "apple-touch-icon.png", "sizes": "180x180", "type": "image/png", "purpose": "any" }
+  ]
+}

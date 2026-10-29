@@ -1,0 +1,1254 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; connect-src https://api.github.com http://localhost:* http://127.0.0.1:*; img-src 'self' data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>일기</title>
+<meta name="description" content="iPhone에서 쓴 일기를 내 GitHub 저장소(Obsidian 볼트)에 바로 저장합니다.">
+<meta name="robots" content="noindex">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f4ebdc">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1d1712">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="일기">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<style>
+  /* ===== 디자인 토큰 ===== */
+  :root {
+    --font-body: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", system-ui, sans-serif;
+    --font-serif: "AppleMyungjo", "Nanum Myeongjo", "Batang", "Noto Serif KR", serif;
+
+    --bg: #f4ebdc;
+    --bg-grain: rgba(120, 84, 50, 0.045);
+    --paper: #fffaf1;
+    --rule: rgba(168, 120, 80, 0.16);
+    --margin-line: rgba(196, 110, 80, 0.28);
+    --ink: #3b2c21;
+    --ink-soft: #6a5242;
+    --line: #dcc6a9;
+    --field: #fffdf8;
+    --accent: #9a4823;
+    --accent-hover: #833c1c;
+    --accent-ink: #ffffff;
+    --chip-bg: #efe2cd;
+    --ok: #3f6b2f;
+    --ok-bg: #e5efd9;
+    --danger: #9e2f1c;
+    --danger-bg: #fbe3d9;
+    --notice-bg: #fbefd7;
+    --notice-line: #e2c38a;
+    --focus: #b0541f;
+    --shadow: 0 1px 2px rgba(80, 50, 25, 0.06), 0 8px 24px rgba(80, 50, 25, 0.08);
+    --bar-bg: rgba(244, 235, 220, 0.92);
+
+    --radius: 16px;
+    --radius-sm: 12px;
+    --gutter: 16px;
+    --body-size: 17px;
+    --line-h: 30px;
+    --tap: 44px;
+    --kb: 0px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1d1712;
+      --bg-grain: rgba(255, 220, 180, 0.025);
+      --paper: #2a211a;
+      --rule: rgba(230, 190, 150, 0.10);
+      --margin-line: rgba(224, 140, 100, 0.22);
+      --ink: #f0e4d4;
+      --ink-soft: #c8b39b;
+      --line: #4d3d30;
+      --field: #251d17;
+      --accent: #e3a679;
+      --accent-hover: #edb78f;
+      --accent-ink: #24160d;
+      --chip-bg: #352a21;
+      --ok: #a9d394;
+      --ok-bg: #26301f;
+      --danger: #f2a690;
+      --danger-bg: #3a201a;
+      --notice-bg: #33291b;
+      --notice-line: #6b5530;
+      --focus: #f0b98d;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.3);
+      --bar-bg: rgba(29, 23, 18, 0.92);
+    }
+  }
+
+  /* ===== 기본 ===== */
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    min-height: 100dvh;
+    background-color: var(--bg);
+    background-image:
+      radial-gradient(var(--bg-grain) 1px, transparent 1.2px),
+      radial-gradient(var(--bg-grain) 1px, transparent 1.2px);
+    background-size: 22px 22px, 22px 22px;
+    background-position: 0 0, 11px 11px;
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.6;
+    overflow-x: hidden;
+    word-break: keep-all;
+    -webkit-tap-highlight-color: transparent;
+  }
+  [hidden] { display: none !important; }
+  button, input, textarea { font: inherit; color: inherit; }
+  :focus { outline: none; }
+  :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 8px; }
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
+
+  .app {
+    width: 100%;
+    max-width: 640px;
+    margin: 0 auto;
+    padding:
+      max(12px, env(safe-area-inset-top))
+      max(var(--gutter), env(safe-area-inset-right))
+      0
+      max(var(--gutter), env(safe-area-inset-left));
+  }
+
+  /* ===== 상단 ===== */
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    min-height: var(--tap);
+  }
+  .brand {
+    margin: 0; font-family: var(--font-serif); font-size: 20px; font-weight: 700;
+    letter-spacing: 0.02em; display: flex; align-items: center; gap: 8px;
+  }
+  .brand svg { width: 22px; height: 22px; color: var(--accent); flex: none; }
+  .icon-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    min-width: var(--tap); min-height: var(--tap); padding: 0 12px;
+    border: 1px solid transparent; border-radius: 999px; background: transparent;
+    color: var(--ink-soft); cursor: pointer; font-size: 15px;
+  }
+  .icon-btn:hover { background: var(--chip-bg); color: var(--ink); }
+  .icon-btn svg { width: 20px; height: 20px; }
+
+  .banner {
+    margin: 8px 0 0; padding: 10px 14px; border-radius: var(--radius-sm);
+    background: var(--notice-bg); border: 1px solid var(--notice-line);
+    font-size: 14px; line-height: 1.5; overflow-wrap: anywhere;
+  }
+
+  /* ===== 쓰기 화면 ===== */
+  .date-block { margin: 18px 2px 10px; }
+  .date-year { margin: 0; font-size: 14px; color: var(--ink-soft); letter-spacing: 0.04em; }
+  .date-main {
+    margin: 2px 0 0; font-family: var(--font-serif); font-weight: 700;
+    font-size: clamp(26px, 7.4vw, 32px); line-height: 1.25; letter-spacing: -0.01em;
+  }
+
+  .today {
+    display: flex; align-items: flex-start; gap: 8px; flex-wrap: wrap;
+    margin: 0 0 14px; min-height: 32px;
+  }
+  .chip {
+    display: inline-flex; align-items: baseline; gap: 8px; max-width: 100%;
+    margin: 0; padding: 6px 14px; border-radius: 14px; background: var(--chip-bg);
+    color: var(--ink); font-size: 14px; line-height: 1.45; overflow-wrap: anywhere;
+  }
+  .chip::before {
+    content: ""; flex: none; width: 8px; height: 8px; border-radius: 50%;
+    background: var(--ink-soft); transform: translateY(-1px);
+  }
+  .chip-file { display: block; font-size: 13px; color: var(--ink-soft); }
+  .chip[data-state="append"]::before { background: var(--accent); }
+  .chip[data-state="new"]::before { background: var(--ok); }
+  .chip[data-state="error"] { background: var(--danger-bg); color: var(--danger); }
+  .chip[data-state="error"]::before { background: var(--danger); }
+  .chip[data-state="loading"]::before { animation: pulse 1.2s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity: 0.25; } }
+  .link-btn {
+    min-height: 32px; padding: 0 10px; border: 0; background: none; cursor: pointer;
+    color: var(--accent); text-decoration: underline; text-underline-offset: 3px; font-size: 14px;
+  }
+
+  .field { margin: 0 0 14px; }
+  .field > label, .label {
+    display: block; margin: 0 2px 6px; font-size: 14px; font-weight: 600; color: var(--ink-soft);
+  }
+  .hint { margin: 6px 2px 0; font-size: 13px; color: var(--ink-soft); line-height: 1.5; overflow-wrap: anywhere; }
+  #filename-preview { word-break: break-all; }
+
+  input[type="text"], input[type="password"] {
+    width: 100%; min-height: 48px; padding: 10px 14px;
+    font-size: 17px; /* iOS 확대 방지: 16px 이상 */
+    background: var(--field); border: 1px solid var(--line); border-radius: var(--radius-sm);
+    -webkit-appearance: none; appearance: none;
+  }
+  input::placeholder, textarea::placeholder { color: var(--ink-soft); opacity: 1; }
+  input:focus-visible, textarea:focus-visible { outline-offset: 0; border-color: var(--focus); }
+
+  .paper {
+    position: relative; background: var(--paper); border: 1px solid var(--line);
+    border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden;
+  }
+  .paper::before { /* 왼쪽 여백선 */
+    content: ""; position: absolute; top: 0; bottom: 0; left: 30px; width: 1px;
+    background: var(--margin-line); pointer-events: none;
+  }
+  textarea#body {
+    display: block; width: 100%;
+    min-height: calc(var(--line-h) * 10 + 32px);
+    padding: 16px 16px 16px 44px;
+    border: 0; border-radius: var(--radius); resize: vertical;
+    font-family: var(--font-serif); font-size: var(--body-size); line-height: var(--line-h);
+    background-color: transparent;
+    background-image: linear-gradient(transparent calc(var(--line-h) - 1px), var(--rule) calc(var(--line-h) - 1px));
+    background-size: 100% var(--line-h);
+    background-position: 0 16px;
+    background-attachment: local;
+    overflow-wrap: break-word;
+    word-break: keep-all;
+  }
+  textarea#body:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
+  textarea#body[readonly] { opacity: 0.7; }
+
+  .meta-row {
+    display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap;
+    margin: 8px 4px 0; font-size: 13px; color: var(--ink-soft);
+  }
+
+  .msg { margin: 12px 0 0; padding: 0; font-size: 15px; line-height: 1.55; overflow-wrap: anywhere; }
+  .msg:not(:empty) { padding: 12px 14px; border-radius: var(--radius-sm); }
+  #msg-status:not(:empty) { background: var(--ok-bg); color: var(--ok); }
+  #msg-alert:not(:empty) { background: var(--danger-bg); color: var(--danger); }
+
+  .write-spacer { height: calc(96px + env(safe-area-inset-bottom)); }
+
+  /* ===== 하단 저장 막대 (키보드 위로 따라 올라감) ===== */
+  .savebar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
+    padding:
+      10px
+      max(var(--gutter), env(safe-area-inset-right))
+      max(12px, env(safe-area-inset-bottom))
+      max(var(--gutter), env(safe-area-inset-left));
+    background: var(--bar-bg);
+    -webkit-backdrop-filter: saturate(1.2) blur(10px); backdrop-filter: saturate(1.2) blur(10px);
+    border-top: 1px solid var(--line);
+    transform: translateY(calc(-1 * var(--kb)));
+  }
+  .kb-open .savebar { padding-bottom: 8px; padding-top: 8px; }
+  .savebar-inner { max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; gap: 8px; }
+  .savebar .msg { margin: 0; font-size: 14px; }
+  .savebar .msg:not(:empty) { padding: 8px 12px; }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    min-height: 48px; padding: 0 18px; border-radius: 999px; cursor: pointer;
+    border: 1px solid var(--line); background: var(--field); color: var(--ink);
+    font-size: 16px; font-weight: 600; text-align: center; touch-action: manipulation;
+  }
+  .btn:hover { border-color: var(--ink-soft); }
+  .btn-primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  .btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+  .btn-danger { color: var(--danger); }
+  .btn[disabled] { opacity: 0.6; cursor: progress; }
+  .btn-block { flex: 1; width: 100%; }
+  .spinner {
+    width: 16px; height: 16px; border-radius: 50%; border: 2px solid currentColor;
+    border-right-color: transparent; animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ===== 설정 화면 ===== */
+  #settings-title:focus { outline: none; }
+  .settings h2 {
+    margin: 18px 2px 4px; font-family: var(--font-serif); font-size: 24px; line-height: 1.3;
+  }
+  .settings .lead { margin: 0 2px 16px; color: var(--ink-soft); font-size: 15px; }
+  .card {
+    background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 16px;
+  }
+  .grid-2 { display: grid; grid-template-columns: 1fr; gap: 0 12px; }
+  @media (min-width: 520px) { .grid-2 { grid-template-columns: 1fr 1fr; } }
+  .token-row { display: flex; gap: 8px; }
+  .token-row input { flex: 1; min-width: 0; }
+  .token-row .btn { flex: none; min-width: 72px; padding: 0 12px; border-radius: var(--radius-sm); }
+  .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+  .actions .btn { flex: 1 1 140px; }
+
+  .checks { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 8px; }
+  .checks li {
+    display: grid; grid-template-columns: 24px 1fr; gap: 8px; align-items: start;
+    padding: 10px 12px; border-radius: var(--radius-sm); background: var(--chip-bg);
+    font-size: 15px; line-height: 1.5; overflow-wrap: anywhere;
+  }
+  .checks li[data-ok="true"] { background: var(--ok-bg); color: var(--ok); }
+  .checks li[data-ok="false"] { background: var(--danger-bg); color: var(--danger); }
+  .checks li[data-ok="warn"] { background: var(--notice-bg); color: var(--ink); }
+  .checks .mark { font-weight: 700; text-align: center; }
+
+  details.help {
+    margin-top: 12px; background: var(--paper); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 0 16px;
+  }
+  details.help summary {
+    min-height: var(--tap); display: flex; align-items: center; cursor: pointer;
+    font-weight: 600; list-style-position: inside;
+  }
+  details.help[open] summary { border-bottom: 1px solid var(--line); margin-bottom: 4px; }
+  details.help ol, details.help ul { margin: 10px 0 14px; padding-left: 20px; font-size: 15px; }
+  details.help li { margin: 4px 0; }
+  details.help p { font-size: 15px; margin: 10px 0; }
+  .settings-spacer { height: calc(32px + env(safe-area-inset-bottom)); }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <h1 class="brand">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v16H6.5A1.5 1.5 0 0 0 5 20.5z"/><path d="M5 20.5A1.5 1.5 0 0 0 6.5 22H19"/><path d="M9 8h6M9 11.5h4"/></svg>
+      <span>일기</span>
+    </h1>
+    <button type="button" class="icon-btn" id="btn-nav" aria-controls="view-settings">
+      <svg id="ico-gear" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span id="btn-nav-label">설정</span>
+    </button>
+  </header>
+
+  <p class="banner" id="test-banner" hidden></p>
+  <p class="banner" id="storage-banner" hidden>이 브라우저에서는 저장 공간을 쓸 수 없어요. 설정과 임시 저장이 유지되지 않습니다. (개인정보 보호 브라우징을 끄거나 홈 화면 앱에서 열어 주세요.)</p>
+
+  <!-- ===== 쓰기 화면 ===== -->
+  <main id="view-write" aria-labelledby="date-main">
+    <div class="date-block">
+      <p class="date-year" id="date-year"></p>
+      <h2 class="date-main" id="date-main"></h2>
+    </div>
+
+    <div class="today">
+      <p class="chip" id="today-chip" role="status" aria-live="polite" data-state="loading">오늘 일기를 확인하는 중…</p>
+      <button type="button" class="link-btn" id="btn-retry-today" hidden>다시 확인</button>
+    </div>
+
+    <div class="field" id="title-field">
+      <label for="title">제목 <span style="font-weight:400">(선택)</span></label>
+      <input type="text" id="title" name="title" maxlength="200" autocomplete="off" enterkeyhint="next" placeholder="비워 두면 첫 문장으로 정해져요" aria-describedby="title-hint">
+      <p class="hint" id="title-hint">파일 이름: <span id="filename-preview"></span></p>
+    </div>
+
+    <div class="field">
+      <label for="body" class="label">오늘의 이야기</label>
+      <div class="paper">
+        <textarea id="body" name="body" rows="10" placeholder="오늘은 어떤 하루였나요?" aria-describedby="draft-note"></textarea>
+      </div>
+      <div class="meta-row">
+        <span id="draft-note">입력하는 글은 이 기기에 임시 저장돼요.</span>
+        <span id="char-count" aria-hidden="true"></span>
+      </div>
+    </div>
+
+    <div class="write-spacer" id="write-spacer"></div>
+  </main>
+
+  <!-- ===== 설정 화면 ===== -->
+  <main id="view-settings" class="settings" aria-labelledby="settings-title" hidden>
+    <h2 id="settings-title" tabindex="-1">설정</h2>
+    <p class="lead">일기를 저장할 GitHub 저장소를 연결해요. 이 정보는 이 기기에만 저장됩니다.</p>
+
+    <p class="banner" id="ios-banner" hidden>지금은 Safari 탭에서 열려 있어요. 먼저 <b>공유 → 홈 화면에 추가</b>를 한 뒤, <b>홈 화면의 ‘일기’ 앱 안에서</b> 설정과 토큰을 입력해 주세요. (Safari와 홈 화면 앱은 저장 공간이 따로예요.)</p>
+
+    <form id="settings-form" class="card" novalidate>
+      <div class="grid-2">
+        <div class="field">
+          <label for="owner">GitHub 사용자명</label>
+          <input type="text" id="owner" name="owner" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="예: my-name" required>
+        </div>
+        <div class="field">
+          <label for="repo">저장소 이름</label>
+          <input type="text" id="repo" name="repo" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="예: obsidian-vault" required>
+        </div>
+        <div class="field">
+          <label for="branch">브랜치</label>
+          <input type="text" id="branch" name="branch" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="main">
+        </div>
+        <div class="field">
+          <label for="folder">일기 폴더</label>
+          <input type="text" id="folder" name="folder" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="일기">
+        </div>
+      </div>
+      <div class="field" style="margin-bottom:0">
+        <label for="token">Personal Access Token</label>
+        <div class="token-row">
+          <input type="password" id="token" name="token" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="github_pat_…" aria-describedby="token-hint">
+          <button type="button" class="btn" id="btn-toggle-token" aria-controls="token" aria-pressed="false">보기</button>
+        </div>
+        <p class="hint" id="token-hint">Contents 읽기·쓰기 권한만 있는 fine-grained 토큰을 권장해요. 토큰은 이 기기 앱 저장소에만 있고 페이지 코드에는 없어요.</p>
+      </div>
+
+      <div class="actions">
+        <button type="submit" class="btn btn-primary" id="btn-save-settings">저장</button>
+        <button type="button" class="btn" id="btn-check">연결 확인</button>
+      </div>
+      <ul class="checks" id="check-results" aria-live="polite"></ul>
+      <p class="msg" id="settings-msg" role="status" aria-live="polite"></p>
+    </form>
+
+    <details class="help">
+      <summary>토큰 만드는 법</summary>
+      <ol>
+        <li>GitHub → <b>Settings</b> → <b>Developer settings</b> → <b>Personal access tokens</b> → <b>Fine-grained tokens</b> → <b>Generate new token</b></li>
+        <li><b>Expiration</b>: 만료 기간을 정해요 (예: 90일).</li>
+        <li><b>Repository access</b>: <b>Only select repositories</b> → 볼트 저장소 <b>하나만</b> 선택</li>
+        <li><b>Repository permissions</b>: <b>Contents</b> = <b>Read and write</b> (나머지는 그대로 없음)</li>
+        <li>만든 토큰을 복사해 위 칸에 붙여 넣어요.</li>
+      </ol>
+    </details>
+    <details class="help">
+      <summary>iPhone 홈 화면에 추가하기</summary>
+      <ol>
+        <li>Safari로 이 페이지를 열고 <b>공유</b> 버튼 → <b>홈 화면에 추가</b></li>
+        <li>홈 화면에 생긴 <b>‘일기’ 앱을 열어서</b> 그 안에서 설정과 토큰을 입력해요.</li>
+      </ol>
+      <p>홈 화면 앱과 Safari는 저장 공간이 따로예요. Safari 탭은 오래 쓰지 않으면 iOS가 저장된 데이터를 지울 수 있어요.</p>
+    </details>
+    <details class="help">
+      <summary>보안 안내</summary>
+      <ul>
+        <li>이 페이지는 GitHub(api.github.com)하고만 통신해요. 다른 서버나 AI로 아무것도 보내지 않아요.</li>
+        <li>토큰은 이 기기의 앱 저장소에만 저장돼요.</li>
+        <li>폰을 잃어버리면 GitHub의 Fine-grained tokens 화면에서 이 토큰을 바로 삭제하세요.</li>
+      </ul>
+    </details>
+
+    <div class="actions">
+      <button type="button" class="btn btn-danger" id="btn-logout">토큰 삭제 (로그아웃)</button>
+    </div>
+    <div class="settings-spacer"></div>
+  </main>
+</div>
+
+<div class="savebar" id="savebar">
+  <div class="savebar-inner">
+    <p class="msg" id="msg-status" role="status" aria-live="polite"></p>
+    <p class="msg" id="msg-alert" role="alert"></p>
+    <button type="button" class="btn btn-primary btn-block" id="btn-save">
+      <span class="spinner" id="save-spinner" hidden aria-hidden="true"></span>
+      <span id="save-label">저장하기</span>
+    </button>
+  </div>
+</div>
+
+<script>
+'use strict';
+(function () {
+  /* ================= 상수·유틸 ================= */
+  var TZ = 'Asia/Seoul';
+  var GITHUB_API = 'https://api.github.com';
+  var TIMEOUT_MS = 20000;
+  var MAX_ATTEMPTS = 3; // 첫 시도 + 재시도 2회
+  var TITLE_MAX_BYTES = 200; // 파일 이름이 255바이트(대부분 파일 시스템 한도)를 넘지 않게
+  var DEFAULTS = { owner: '', repo: '', branch: 'main', folder: '일기', token: '' };
+
+  function $(id) { return document.getElementById(id); }
+
+  // 다른 사이트의 frame 안에서는 동작하지 않는다 (클릭재킹 방지 — GitHub Pages는 X-Frame-Options를 못 보냄)
+  var framed = true;
+  try { framed = window.top !== window.self; } catch (e) { framed = true; }
+  if (framed) {
+    document.documentElement.textContent = '';
+    return;
+  }
+
+  /* ---------- API 베이스 (테스트용 ?api= 는 이 기기의 localhost만) ---------- */
+  var API = (function () {
+    var raw = null;
+    try { raw = new URLSearchParams(location.search).get('api'); } catch (e) { raw = null; }
+    if (!raw) return { base: GITHUB_API, test: false };
+    try {
+      var u = new URL(raw);
+      var okHost = u.hostname === 'localhost' || u.hostname === '127.0.0.1';
+      if (okHost && u.protocol === 'http:') return { base: u.origin, test: true };
+    } catch (e) { /* 무시 */ }
+    return { base: GITHUB_API, test: false, rejected: true };
+  })();
+
+  // 테스트 모드는 실제 설정·초안과 완전히 분리된 저장소 키만 쓴다.
+  // (실제 키는 읽지도 쓰지도 않으므로 실제 토큰이 테스트 서버로 갈 수 없다)
+  var KEY_PREFIX = API.test ? 'mobileDiary.test.' : 'mobileDiary.';
+  var KEY_SETTINGS = KEY_PREFIX + 'settings.v1';
+  var KEY_DRAFT = KEY_PREFIX + 'draft.v1';
+
+  /* ---------- 저장소(localStorage) — 실패해도 앱은 동작 ---------- */
+  var storageOk = true;
+  var store = {
+    get: function (k) {
+      try { var v = localStorage.getItem(k); return v == null ? null : JSON.parse(v); }
+      catch (e) { storageOk = false; return null; }
+    },
+    set: function (k, v) {
+      try { localStorage.setItem(k, JSON.stringify(v)); return true; }
+      catch (e) { storageOk = false; return false; }
+    },
+    del: function (k) {
+      try { localStorage.removeItem(k); return true; }
+      catch (e) { storageOk = false; return false; }
+    }
+  };
+
+  /* ---------- 한국 시간 ---------- */
+  var fmtParts = new Intl.DateTimeFormat('en-US', {
+    timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23'
+  });
+  var fmtDisplay = new Intl.DateTimeFormat('ko-KR', { timeZone: TZ, month: 'long', day: 'numeric', weekday: 'long' });
+  var fmtYear = new Intl.DateTimeFormat('ko-KR', { timeZone: TZ, year: 'numeric' });
+  var fmtClock = new Intl.DateTimeFormat('ko-KR', { timeZone: TZ, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+
+  function seoulNow(d) {
+    d = d || new Date();
+    var p = {};
+    fmtParts.formatToParts(d).forEach(function (x) { p[x.type] = x.value; });
+    var hh = p.hour === '24' ? '00' : p.hour;
+    return {
+      date: p.year + '-' + p.month + '-' + p.day,
+      time: hh + ':' + p.minute + ':' + p.second,
+      display: fmtDisplay.format(d),
+      year: fmtYear.format(d)
+    };
+  }
+
+  /* ---------- base64 ⇄ UTF-8 (한글 안전) ---------- */
+  function b64ToUtf8(b64) {
+    var bin = atob(String(b64).replace(/[\r\n\s]/g, ''));
+    var bytes = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    // fatal: UTF-8이 아니면 이어 쓰지 않는다(기존 내용 훼손 방지). ignoreBOM: BOM도 그대로 보존.
+    return new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(bytes);
+  }
+  function utf8ToB64(str) {
+    var bytes = new TextEncoder().encode(str);
+    var bin = '';
+    for (var i = 0; i < bytes.length; i += 0x8000) {
+      bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    }
+    return btoa(bin);
+  }
+
+  /* ---------- 글자(grapheme) 단위 자르기 — 이모지 보호 ---------- */
+  var segmenter = (typeof Intl !== 'undefined' && Intl.Segmenter) ? new Intl.Segmenter('ko', { granularity: 'grapheme' }) : null;
+  function graphemes(s) {
+    if (segmenter) { var out = []; for (var it of segmenter.segment(s)) out.push(it.segment); return out; }
+    return Array.from(s);
+  }
+  function cutGraphemes(s, n) {
+    var g = graphemes(s);
+    return g.length > n ? g.slice(0, n).join('') : s;
+  }
+  var utf8Len = (function () {
+    var enc = new TextEncoder();
+    return function (s) { return enc.encode(s).length; };
+  })();
+  function cutBytes(s, max) { // 글자를 쪼개지 않고 UTF-8 max바이트 이하로
+    if (utf8Len(s) <= max) return s;
+    var g = graphemes(s), out = '', n = 0;
+    for (var i = 0; i < g.length; i++) {
+      var b = utf8Len(g[i]);
+      if (n + b > max) break;
+      out += g[i]; n += b;
+    }
+    return out;
+  }
+
+  /* ---------- 파일 이름 ---------- */
+  function sanitizeTitle(s) {
+    return String(s || '')
+      .replace(/[\u0000-\u001F\u007F-\u009F\u2028\u2029]/g, ' ') // 제어문자·줄바꿈
+      .replace(/[\\/:*?"<>|#^\[\]]/g, '')                       // Windows·Obsidian 금지 문자
+      .replace(/\s+/g, ' ')
+      .trim()
+      .replace(/[\s.]+$/, '')                                    // 끝의 공백·마침표
+      .trim();
+  }
+  function firstSentence(body) {
+    var line = '';
+    var lines = String(body).split('\n');
+    for (var i = 0; i < lines.length; i++) { if (lines[i].trim()) { line = lines[i].trim(); break; } }
+    var m = line.match(/^.*?[.!?。！？](?=\s|$)/);
+    return m ? m[0] : line;
+  }
+  function makeTitle(rawTitle, body) {
+    var t = sanitizeTitle(rawTitle);
+    if (t) return sanitizeTitle(cutBytes(cutGraphemes(t, 80), TITLE_MAX_BYTES));
+    return sanitizeTitle(cutBytes(cutGraphemes(sanitizeTitle(firstSentence(body)), 30), TITLE_MAX_BYTES));
+  }
+  function fileNameFor(date, rawTitle, body) {
+    var t = makeTitle(rawTitle, body);
+    return t ? date + ' ' + t + '.md' : date + '.md';
+  }
+  function isTodayFile(name, date) {
+    return name === date + '.md' || (name.indexOf(date + ' ') === 0 && /\.md$/.test(name));
+  }
+
+  /* ---------- 본문 정리 ---------- */
+  function normalizeBody(s) {
+    return String(s || '')
+      .replace(/\r\n?/g, '\n')
+      .replace(/^(?:[ \t\u3000]*\n)+/, '') // 앞쪽 빈 줄
+      .replace(/\s+$/u, '');               // 끝 공백·줄바꿈
+  }
+  function appendText(existing, body) {
+    // 기존 내용은 1바이트도 바꾸지 않고 뒤에 덧붙이기만 한다.
+    // 파일이 전부 CRLF면 이어 쓰는 부분도 CRLF로 맞춘다.
+    var crlf = /\r\n/.test(existing) && !/(^|[^\r])\n/.test(existing);
+    var nl = crlf ? '\r\n' : '\n';
+    var add = crlf ? body.replace(/\n/g, '\r\n') : body;
+    if (!/\S/.test(existing.replace(/^\uFEFF/, ''))) return existing + add + nl; // 비었거나 공백뿐인 파일
+    // 끝의 공백 부분에 줄바꿈이 몇 개 있는지 보고, 빈 줄 하나로 구분되도록 모자란 만큼만 더한다
+    var tailNl = (existing.match(/\s*$/)[0].match(/\n/g) || []).length;
+    var sep = tailNl >= 2 ? '' : tailNl === 1 ? nl : nl + nl;
+    return existing + sep + add + nl;
+  }
+  function alreadyEndsWith(existing, body) {
+    if (!body) return false;
+    var t = existing.replace(/\r\n/g, '\n').replace(/\s+$/u, '');
+    if (t.slice(-body.length) !== body) return false;
+    var before = t.charAt(t.length - body.length - 1);
+    return t.length === body.length || before === '\n' || before === '\uFEFF'; // 문단 시작부터 같아야 함
+  }
+
+  /* ---------- 경로 ---------- */
+  function cleanFolder(f) {
+    return String(f == null ? '' : f).trim().split('/').map(function (s) { return s.trim(); })
+      .filter(function (s) { return s && s !== '.'; }).join('/');
+  }
+  function encPath(p) {
+    return p.split('/').filter(Boolean).map(encodeURIComponent).join('/');
+  }
+  function repoPath(cfg) {
+    return '/repos/' + encodeURIComponent(cfg.owner) + '/' + encodeURIComponent(cfg.repo);
+  }
+  function contentsUrl(cfg, path) {
+    var ep = encPath(path);
+    return repoPath(cfg) + '/contents' + (ep ? '/' + ep : '') + '?ref=' + encodeURIComponent(cfg.branch);
+  }
+
+  /* ================= GitHub API ================= */
+  function ApiError(kind, status, ghMessage, rate) {
+    this.name = 'ApiError';
+    this.kind = kind;           // 'network' | 'timeout' | 'http' | 'encoding' | 'shape'
+    this.status = status || 0;
+    this.ghMessage = ghMessage || '';
+    this.rate = rate || {};
+    this.phase = '';
+  }
+
+  function gh(cfg, method, path, body) {
+    // 요청 주소의 origin을 검사한다. 실제 모드에서는 https://api.github.com 이 아니면
+    // 토큰을 붙이지 않을 뿐 아니라 요청 자체를 보내지 않는다.
+    var url;
+    try { url = new URL(API.base + path); } catch (e) { return Promise.reject(new ApiError('shape', 0, 'bad-url')); }
+    var allowed = API.test ? API.base : GITHUB_API;
+    if (url.origin !== allowed || (!API.test && url.origin !== GITHUB_API)) {
+      return Promise.reject(new ApiError('shape', 0, 'bad-origin'));
+    }
+    var ctrl = new AbortController();
+    var timer = setTimeout(function () { ctrl.abort(); }, TIMEOUT_MS);
+    var headers = {
+      'Accept': 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28'
+    };
+    if (cfg.token && url.origin === allowed) headers['Authorization'] = 'Bearer ' + cfg.token;
+    if (body) headers['Content-Type'] = 'application/json';
+    return fetch(url.href, {
+      method: method, headers: headers, body: body ? JSON.stringify(body) : undefined,
+      signal: ctrl.signal, cache: 'no-store', credentials: 'omit', referrerPolicy: 'no-referrer'
+    }).then(function (res) {
+      return res.text().then(function (txt) {
+        clearTimeout(timer);
+        var data = null;
+        try { data = txt ? JSON.parse(txt) : null; } catch (e) { data = null; }
+        if (!res.ok) {
+          throw new ApiError('http', res.status, data && typeof data.message === 'string' ? data.message : '', {
+            remaining: res.headers.get('x-ratelimit-remaining'),
+            reset: res.headers.get('x-ratelimit-reset'),
+            retryAfter: res.headers.get('retry-after')
+          });
+        }
+        return data;
+      });
+    }, function () {
+      clearTimeout(timer);
+      throw new ApiError(ctrl.signal.aborted ? 'timeout' : 'network');
+    }).catch(function (e) {
+      clearTimeout(timer);
+      if (e instanceof ApiError) throw e;
+      throw new ApiError(ctrl.signal.aborted ? 'timeout' : 'network');
+    });
+  }
+
+  function listFolder(cfg) {
+    // 폴더 없음(404)이면 빈 목록
+    return gh(cfg, 'GET', contentsUrl(cfg, cfg.folder)).then(function (data) {
+      if (!Array.isArray(data)) throw new ApiError('shape', 0, 'folder-is-file');
+      if (data.length < 1000) return data;
+      return listFolderViaTree(cfg); // Contents API는 폴더당 1000개까지만 돌려준다
+    }, function (e) {
+      if (!(e.kind === 'http' && e.status === 404)) throw e;
+      // 폴더가 아직 없는 것인지, 저장소·브랜치를 못 찾는 것인지 구분한다 (GitHub는 둘 다 404)
+      return gh(cfg, 'GET', repoPath(cfg) + '/branches/' + encodeURIComponent(cfg.branch)).then(function () {
+        return null; // 폴더만 없음 → 첫 저장 때 만들어짐
+      }, function (e2) {
+        if (e2.kind === 'http' && e2.status === 404) e2.phase = 'repo';
+        throw e2;
+      });
+    });
+  }
+  function listFolderViaTree(cfg) {
+    var segs = cfg.folder.split('/').filter(Boolean);
+    var shaP;
+    if (!segs.length) {
+      shaP = Promise.resolve(encodeURIComponent(cfg.branch));
+    } else {
+      var last = segs.pop();
+      shaP = gh(cfg, 'GET', contentsUrl(cfg, segs.join('/'))).then(function (parent) {
+        var hit = Array.isArray(parent) && parent.filter(function (x) { return x.name === last && x.type === 'dir'; })[0];
+        if (!hit) throw new ApiError('shape', 0, 'tree-not-found');
+        return hit.sha;
+      });
+    }
+    return shaP.then(function (sha) {
+      return gh(cfg, 'GET', repoPath(cfg) + '/git/trees/' + sha);
+    }).then(function (t) {
+      return (t && t.tree || []).map(function (x) {
+        return { name: x.path, type: x.type === 'blob' ? 'file' : x.type };
+      });
+    });
+  }
+
+  function findTodayFile(cfg, date) {
+    return listFolder(cfg).then(function (items) {
+      if (!items) return null;
+      var names = items.filter(function (x) { return x && x.type === 'file' && typeof x.name === 'string' && isTodayFile(x.name, date); })
+        .map(function (x) { return x.name; })
+        .sort(function (a, b) { return a < b ? -1 : a > b ? 1 : 0; });
+      return names.length ? names[0] : null;
+    });
+  }
+
+  function getFile(cfg, path) {
+    return gh(cfg, 'GET', contentsUrl(cfg, path)).then(function (data) {
+      if (!data || Array.isArray(data) || typeof data.sha !== 'string') throw new ApiError('shape', 0, 'not-a-file');
+      if (data.encoding !== 'base64' || typeof data.content !== 'string') throw new ApiError('encoding', 0, 'too-large');
+      var text;
+      try { text = b64ToUtf8(data.content); } catch (e) { throw new ApiError('encoding', 0, 'not-utf8'); }
+      return { text: text, sha: data.sha };
+    });
+  }
+
+  function putFile(cfg, path, text, sha, message) {
+    var payload = { message: message, content: utf8ToB64(text), branch: cfg.branch };
+    if (sha) payload.sha = sha;
+    var ep = encPath(path);
+    return gh(cfg, 'PUT', repoPath(cfg) + '/contents/' + ep, payload).catch(function (e) {
+      e.phase = 'put';
+      throw e;
+    });
+  }
+
+  function joinPath(folder, name) { return folder ? folder + '/' + name : name; }
+
+  /* 저장 본체: 조회 → 이어 쓰기/새 파일 → 충돌 시 최대 2회 재시도
+     pending: 지난번에 응답 없이 끊긴 저장의 본문(이미 커밋됐을 수 있음) 또는 null */
+  function saveEntry(cfg, body, rawTitle, pending) {
+    var attempt = 0;
+    function run() {
+      attempt++;
+      var now = seoulNow();
+      var date = now.date;
+      var message = 'mobile diary: ' + date + ' ' + now.time;
+      return findTodayFile(cfg, date).then(function (name) {
+        if (name) {
+          var path = joinPath(cfg.folder, name);
+          return getFile(cfg, path).then(function (f) {
+            var add = body, partial = false;
+            // 끊긴 저장분이 이미 들어가 있고, 그 뒤에 글을 덧붙였다면 덧붙인 부분만 이어 쓴다
+            if (pending && pending !== body && body.indexOf(pending) === 0 && alreadyEndsWith(f.text, pending)) {
+              add = normalizeBody(body.slice(pending.length)).replace(/^\s+/, '');
+              partial = true;
+              if (!add) return { mode: 'append', name: name, date: date, already: true };
+            }
+            // 앞선 요청이 실제로는 커밋됐을 수 있는 경우(응답 유실, 브라우저 자동 재전송 뒤 409 등) 중복 방지
+            if ((pending || attempt > 1) && (alreadyEndsWith(f.text, add) || alreadyEndsWith(f.text, body))) {
+              return { mode: 'append', name: name, date: date, already: true };
+            }
+            return putFile(cfg, path, appendText(f.text, add), f.sha, message)
+              .then(function () { return { mode: 'append', name: name, date: date, partial: partial }; });
+          });
+        }
+        var newName = fileNameFor(date, rawTitle, body);
+        return putFile(cfg, joinPath(cfg.folder, newName), body + '\n', null, message)
+          .then(function () { return { mode: 'create', name: newName, date: date }; });
+      }).catch(function (e) {
+        // 409: sha 불일치(그 사이 다른 기기에서 수정) / 422: 새 파일인데 이미 같은 이름이 생김 → 다시 조회
+        if (e.kind === 'http' && (e.status === 409 || e.status === 422) && attempt < MAX_ATTEMPTS) return run();
+        throw e;
+      });
+    }
+    return run();
+  }
+
+  /* ---------- 오류 문구 ---------- */
+  function describeError(e, ctx) {
+    var extra = '';
+    if (!(e instanceof ApiError)) return '알 수 없는 오류가 났어요. 다시 시도해 주세요.';
+    if (e.kind === 'network') return '인터넷에 연결할 수 없어요. 연결 상태를 확인해 주세요.';
+    if (e.kind === 'timeout') return 'GitHub가 20초 동안 응답하지 않았어요. 잠시 후 다시 시도해 주세요.';
+    if (e.kind === 'encoding') {
+      return e.ghMessage === 'too-large'
+        ? '오늘 일기 파일이 너무 커서(1MB 초과) 이어 쓸 수 없어요.'
+        : '오늘 일기 파일이 UTF-8 글자가 아니어서, 내용을 망가뜨리지 않도록 이어 쓰지 않았어요.';
+    }
+    if (e.kind === 'shape') {
+      if (e.ghMessage === 'folder-is-file') return '설정한 일기 폴더 경로가 폴더가 아니라 파일이에요. 설정을 확인해 주세요.';
+      if (e.ghMessage === 'bad-origin' || e.ghMessage === 'bad-url') return '허용되지 않은 주소로는 연결하지 않아요. 페이지 주소를 확인해 주세요.';
+      return 'GitHub에서 예상과 다른 응답이 왔어요. 설정의 폴더 경로를 확인해 주세요.';
+    }
+    var s = e.status;
+    if (e.ghMessage) extra = ' (GitHub: ' + e.ghMessage + ')';
+    if (s === 401) return '토큰이 올바르지 않거나 만료됐어요. 설정에서 새 토큰을 넣어 주세요.';
+    if (s === 403 || s === 429) {
+      if (e.rate.remaining === '0' || s === 429 || e.rate.retryAfter) {
+        var mins = '';
+        var reset = parseInt(e.rate.reset, 10);
+        if (reset) {
+          var m = Math.max(1, Math.ceil((reset * 1000 - Date.now()) / 60000));
+          mins = ' 약 ' + m + '분 뒤에';
+        }
+        return 'GitHub 요청 한도를 넘었어요.' + mins + ' 다시 시도해 주세요.';
+      }
+      return '토큰에 이 저장소의 권한이 부족해요. 토큰의 Contents 권한이 "Read and write"인지 확인해 주세요.' + extra;
+    }
+    if (s === 404) {
+      if (ctx === 'repo') return '저장소나 브랜치를 찾을 수 없어요. 설정의 사용자명·저장소 이름·브랜치와, 토큰이 이 저장소를 선택했는지 확인해 주세요.';
+      if (ctx === 'put') return '저장할 곳을 찾지 못했어요. 저장소 이름·브랜치를 확인하고, 토큰이 이 저장소에 접근할 수 있는지 확인해 주세요.' + extra;
+      return '저장소를 찾을 수 없거나 토큰이 이 저장소에 접근할 수 없어요. 사용자명·저장소 이름과 토큰의 저장소 선택을 확인해 주세요.' + extra;
+    }
+    if (s === 409 || s === 422) return '그 사이 다른 기기에서 일기가 바뀌어 저장하지 못했어요. 다시 저장해 주세요.' + extra;
+    if (s >= 500) return 'GitHub 서버에 일시적인 문제가 있어요. 잠시 후 다시 시도해 주세요.';
+    return '저장하지 못했어요 (오류 ' + s + ').' + extra;
+  }
+
+  /* ================= 설정 ================= */
+  function loadSettings() {
+    var s = store.get(KEY_SETTINGS) || {};
+    var out = {};
+    Object.keys(DEFAULTS).forEach(function (k) { out[k] = typeof s[k] === 'string' ? s[k] : DEFAULTS[k]; });
+    return out;
+  }
+  function normalizeSettings(raw) {
+    var owner = String(raw.owner || '').trim();
+    var repo = String(raw.repo || '').trim();
+    // "owner/repo" 또는 GitHub 주소를 붙여 넣은 경우
+    var m = repo.match(/^(?:https?:\/\/)?(?:www\.)?github\.com\/([^\/\s]+)\/([^\/\s?#]+)/i) || repo.match(/^([^\/\s]+)\/([^\/\s]+)$/);
+    if (m) { if (!owner) owner = m[1]; repo = m[2]; }
+    repo = repo.replace(/\.git$/i, '');
+    return {
+      owner: owner.replace(/^@/, ''),
+      repo: repo,
+      branch: String(raw.branch || '').trim() || DEFAULTS.branch,
+      folder: cleanFolder(raw.folder == null || String(raw.folder).trim() === '' ? DEFAULTS.folder : raw.folder),
+      token: String(raw.token || '').trim()
+    };
+  }
+  function validateSettings(c) {
+    if (!c.owner) return 'GitHub 사용자명을 입력해 주세요.';
+    if (!/^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$/.test(c.owner)) return 'GitHub 사용자명은 영문·숫자·하이픈(-)만 쓸 수 있어요.';
+    if (!c.repo) return '저장소 이름을 입력해 주세요.';
+    if (!/^[A-Za-z0-9._-]{1,100}$/.test(c.repo)) return '저장소 이름은 영문·숫자와 . _ - 만 쓸 수 있어요.';
+    if (c.folder.split('/').indexOf('..') !== -1) return '일기 폴더 경로에 ".."는 쓸 수 없어요.';
+    if (!c.token) return '토큰을 입력해 주세요.';
+    if (/\s/.test(c.token)) return '토큰에 공백이 들어 있어요. 다시 복사해 붙여 넣어 주세요.';
+    return '';
+  }
+  function isComplete(c) { return !validateSettings(c); }
+
+  /* ================= DOM 참조 ================= */
+  var el = {
+    viewWrite: $('view-write'), viewSettings: $('view-settings'),
+    btnNav: $('btn-nav'), btnNavLabel: $('btn-nav-label'), icoGear: $('ico-gear'),
+    dateYear: $('date-year'), dateMain: $('date-main'),
+    chip: $('today-chip'), btnRetryToday: $('btn-retry-today'),
+    titleField: $('title-field'), title: $('title'), filenamePreview: $('filename-preview'),
+    body: $('body'), draftNote: $('draft-note'), charCount: $('char-count'),
+    msgStatus: $('msg-status'), msgAlert: $('msg-alert'),
+    savebar: $('savebar'), btnSave: $('btn-save'), saveLabel: $('save-label'), saveSpinner: $('save-spinner'),
+    form: $('settings-form'), owner: $('owner'), repo: $('repo'), branch: $('branch'), folder: $('folder'), token: $('token'),
+    btnToggleToken: $('btn-toggle-token'), btnCheck: $('btn-check'), btnSaveSettings: $('btn-save-settings'),
+    checkResults: $('check-results'), settingsMsg: $('settings-msg'), btnLogout: $('btn-logout'),
+    testBanner: $('test-banner'), storageBanner: $('storage-banner'), iosBanner: $('ios-banner')
+  };
+
+  /* ================= 상태 ================= */
+  var state = {
+    view: 'write',
+    today: { status: 'loading', name: null, date: null }, // loading | append | new | error | unset
+    todayReq: 0,
+    lastCheck: 0,
+    saving: false,
+    pending: null // 지난 저장이 응답 없이 끊김 → 그때 보낸 본문 (이미 커밋됐을 수 있음)
+  };
+
+  function setMsg(kind, text) {
+    el.msgStatus.textContent = kind === 'ok' ? text : '';
+    el.msgAlert.textContent = kind === 'err' ? text : '';
+  }
+
+  /* ---------- 날짜 표시 ---------- */
+  function renderDate() {
+    var n = seoulNow();
+    el.dateYear.textContent = n.year;
+    el.dateMain.textContent = n.display;
+    return n;
+  }
+
+  /* ---------- 오늘 파일 상태 ---------- */
+  function renderToday() {
+    var t = state.today;
+    el.chip.dataset.state = t.status;
+    el.btnRetryToday.hidden = t.status !== 'error';
+    if (t.status === 'loading') el.chip.textContent = '오늘 일기를 확인하는 중…';
+    else if (t.status === 'append') {
+      el.chip.textContent = '';
+      var wrap = document.createElement('span');
+      var file = document.createElement('span');
+      file.className = 'chip-file';
+      file.textContent = t.name;
+      wrap.appendChild(document.createTextNode('오늘 일기에 이어 쓰기: '));
+      wrap.appendChild(file);
+      el.chip.appendChild(wrap);
+    }
+    else if (t.status === 'new') el.chip.textContent = '새 일기';
+    else if (t.status === 'unset') el.chip.textContent = '먼저 설정에서 저장소를 연결해 주세요';
+    else el.chip.textContent = '오늘 일기를 확인하지 못했어요 — ' + (t.error || '');
+    var appending = t.status === 'append';
+    el.titleField.hidden = appending;
+    updatePreview();
+  }
+  function updatePreview() {
+    var d = state.today.date || seoulNow().date;
+    var body = normalizeBody(el.body.value);
+    el.filenamePreview.textContent = (el.title.value.trim() || body) ? fileNameFor(d, el.title.value, body) : d + ' (첫 문장).md';
+  }
+  function refreshToday() {
+    var cfg = loadSettings();
+    var n = renderDate();
+    if (!isComplete(cfg)) { state.today = { status: 'unset', name: null, date: n.date }; renderToday(); return Promise.resolve(); }
+    var req = ++state.todayReq;
+    state.today = { status: 'loading', name: null, date: n.date };
+    renderToday();
+    return findTodayFile(cfg, n.date).then(function (name) {
+      if (req !== state.todayReq) return;
+      state.lastCheck = Date.now();
+      state.today = { status: name ? 'append' : 'new', name: name, date: n.date };
+      renderToday();
+    }, function (e) {
+      if (req !== state.todayReq) return;
+      state.today = { status: 'error', name: null, date: n.date, error: describeError(e, e && e.phase || 'get') };
+      renderToday();
+    });
+  }
+
+  /* ---------- 초안 ---------- */
+  var draftTimer = null;
+  function writeDraftNow() {
+    clearTimeout(draftTimer); draftTimer = null;
+    var body = el.body.value, title = el.title.value;
+    var ok;
+    if (!body && !title && !state.pending) ok = store.del(KEY_DRAFT);
+    else ok = store.set(KEY_DRAFT, { body: body, title: title, pending: state.pending, savedAt: Date.now() });
+    if (!ok) {
+      el.draftNote.textContent = '⚠ 임시 저장을 하지 못했어요. 저장하기 전에 앱을 닫지 마세요.';
+      el.storageBanner.hidden = false;
+    } else if (body || title) {
+      el.draftNote.textContent = '임시 저장됨 · ' + fmtClock.format(new Date());
+    } else {
+      el.draftNote.textContent = '입력하는 글은 이 기기에 임시 저장돼요.';
+    }
+  }
+  function scheduleDraft() {
+    clearTimeout(draftTimer);
+    draftTimer = setTimeout(writeDraftNow, 400);
+  }
+  function restoreDraft() {
+    var d = store.get(KEY_DRAFT);
+    if (!d || typeof d !== 'object') return;
+    if (typeof d.body === 'string') el.body.value = d.body;
+    if (typeof d.title === 'string') el.title.value = d.title;
+    state.pending = typeof d.pending === 'string' && d.pending ? d.pending
+      : (d.uncertain === true && typeof d.body === 'string' ? normalizeBody(d.body) || null : null); // 이전 형식 호환
+    if (d.body || d.title) {
+      el.draftNote.textContent = '임시 저장된 글을 불러왔어요' + (d.savedAt ? ' · ' + fmtClock.format(new Date(d.savedAt)) : '');
+    }
+  }
+  function updateCount() {
+    var n = graphemes(el.body.value).length;
+    el.charCount.textContent = n ? n.toLocaleString('ko-KR') + '자' : '';
+  }
+
+  /* ---------- 저장 ---------- */
+  function setSaving(on) {
+    state.saving = on;
+    el.btnSave.disabled = on;
+    el.btnSave.setAttribute('aria-busy', on ? 'true' : 'false');
+    el.saveSpinner.hidden = !on;
+    el.saveLabel.textContent = on ? '저장하는 중…' : '저장하기';
+    el.body.readOnly = on;
+    el.title.readOnly = on;
+  }
+  function save() {
+    if (state.saving) return; // 중복 제출 방지
+    var cfg = loadSettings();
+    if (!isComplete(cfg)) { setMsg('err', '먼저 설정에서 저장소와 토큰을 입력해 주세요.'); showView('settings'); return; }
+    var body = normalizeBody(el.body.value);
+    if (!body) { setMsg('err', '저장할 내용이 없어요. 본문을 입력해 주세요.'); el.body.focus(); return; }
+
+    writeDraftNow(); // 실패해도 글이 남도록 먼저 기록
+    setSaving(true);
+    setMsg(null, '');
+    var title = state.today.status === 'append' ? '' : el.title.value;
+
+    saveEntry(cfg, body, title, state.pending).then(function (r) {
+      state.pending = null;
+      el.body.value = '';
+      el.title.value = '';
+      store.del(KEY_DRAFT);
+      el.draftNote.textContent = '입력하는 글은 이 기기에 임시 저장돼요.';
+      updateCount();
+      state.todayReq++; // 진행 중인 오래된 조회 결과 무시
+      state.lastCheck = Date.now();
+      state.today = { status: 'append', name: r.name, date: r.date };
+      renderDate();
+      renderToday();
+      var how = (r.mode === 'append' ? '이어 쓰기' : '새 파일') +
+        (r.already ? ' · 앞서 끊긴 저장이 이미 반영돼 있었어요' : r.partial ? ' · 앞서 끊긴 저장분은 이미 있어 덧붙인 부분만 저장' : '');
+      setMsg('ok', '저장됐어요 ✓ (' + how + ') ' + r.name);
+    }, function (e) {
+      if (e && (e.kind === 'network' || e.kind === 'timeout') && e.phase === 'put') {
+        // 응답만 끊겼을 수 있음 → 다음 저장 때 이 본문이 이미 들어갔는지 확인해 중복을 막는다.
+        // 이미 끊긴 저장분이 있고 지금 글이 그걸 이어 쓴 것이면 처음 것을 기준으로 둔다.
+        state.pending = state.pending && body.indexOf(state.pending) === 0 ? state.pending : body;
+      }
+      writeDraftNow();
+      setMsg('err', describeError(e, e && e.phase) + ' 쓴 글은 이 기기에 남아 있어요.');
+    }).then(function () {
+      setSaving(false);
+    });
+  }
+
+  /* ================= 화면 전환 ================= */
+  function showView(v, fromUser) {
+    state.view = v;
+    var settings = v === 'settings';
+    el.viewWrite.hidden = settings;
+    el.viewSettings.hidden = !settings;
+    el.savebar.hidden = settings;
+    el.btnNavLabel.textContent = settings ? '쓰기로' : '설정';
+    el.icoGear.style.display = settings ? 'none' : '';
+    if (settings) {
+      fillSettingsForm();
+      el.checkResults.textContent = '';
+      el.settingsMsg.textContent = '';
+      el.iosBanner.hidden = !(isIOS() && !isStandalone());
+      if (fromUser) document.getElementById('settings-title').focus();
+    } else {
+      refreshToday();
+    }
+    window.scrollTo(0, 0);
+  }
+  function fillSettingsForm() {
+    var c = loadSettings();
+    el.owner.value = c.owner; el.repo.value = c.repo; el.branch.value = c.branch;
+    el.folder.value = c.folder; el.token.value = c.token;
+    setTokenVisible(false);
+  }
+  function readForm() {
+    return normalizeSettings({ owner: el.owner.value, repo: el.repo.value, branch: el.branch.value, folder: el.folder.value, token: el.token.value });
+  }
+  function setTokenVisible(v) {
+    el.token.type = v ? 'text' : 'password';
+    el.btnToggleToken.textContent = v ? '숨기기' : '보기';
+    el.btnToggleToken.setAttribute('aria-pressed', v ? 'true' : 'false');
+  }
+
+  /* ---------- 연결 확인 ---------- */
+  function addCheck(ok, text) {
+    var li = document.createElement('li');
+    li.dataset.ok = String(ok);
+    var mark = document.createElement('span');
+    mark.className = 'mark'; mark.setAttribute('aria-hidden', 'true');
+    mark.textContent = ok === true ? '✓' : ok === 'warn' ? '!' : '✕';
+    var label = document.createElement('span');
+    label.textContent = (ok === true ? '' : ok === 'warn' ? '주의: ' : '실패: ') + text;
+    li.appendChild(mark); li.appendChild(label);
+    el.checkResults.appendChild(li);
+  }
+  function checkConnection() {
+    var cfg = readForm();
+    el.checkResults.textContent = '';
+    el.settingsMsg.textContent = '';
+    var err = validateSettings(cfg);
+    if (err) { addCheck(false, err); return; }
+    el.btnCheck.disabled = true;
+    el.btnCheck.textContent = '확인하는 중…';
+    if (/^ghp_/.test(cfg.token)) addCheck('warn', '클래식 토큰이에요. 권한을 저장소 하나로 좁힐 수 있는 fine-grained 토큰을 권장해요.');
+
+    gh(cfg, 'GET', repoPath(cfg)).then(function (repo) {
+      addCheck(true, '토큰이 유효하고 저장소에 접근할 수 있어요: ' + (repo && repo.full_name || cfg.owner + '/' + cfg.repo));
+      if (repo && repo.private === false) addCheck('warn', '이 저장소는 공개(public)예요. 일기가 누구에게나 보일 수 있어요.');
+      if (repo && repo.permissions && repo.permissions.push === false) addCheck(false, '이 계정은 저장소에 쓰기 권한이 없어요.');
+      return gh(cfg, 'GET', repoPath(cfg) + '/branches/' + encodeURIComponent(cfg.branch)).then(function () {
+        addCheck(true, '브랜치 확인: ' + cfg.branch);
+        return gh(cfg, 'GET', contentsUrl(cfg, cfg.folder)).then(function (d) {
+          if (Array.isArray(d)) {
+            var n = d.filter(function (x) { return x.type === 'file' && /\.md$/.test(x.name); }).length;
+            addCheck(true, '폴더 확인: ' + (cfg.folder || '(최상위)') + ' (md 파일 ' + n + (d.length >= 1000 ? '+' : '') + '개).');
+          } else {
+            addCheck(false, '"' + cfg.folder + '"는 폴더가 아니라 파일이에요.');
+          }
+        }, function (e) {
+          if (e.kind === 'http' && e.status === 404) addCheck('warn', '폴더가 아직 없어요: ' + cfg.folder + ' — 첫 일기를 저장하면 만들어져요.');
+          else throw e;
+        });
+      }, function (e) {
+        if (e.kind === 'http' && e.status === 404) { addCheck(false, '브랜치를 찾을 수 없어요: ' + cfg.branch); return; }
+        throw e;
+      });
+    }).then(function () {
+      addCheck('warn', '쓰기 권한(Contents: Read and write)은 첫 저장 때 확인돼요.');
+    }, function (e) {
+      addCheck(false, describeError(e, 'check'));
+    }).then(function () {
+      el.btnCheck.disabled = false;
+      el.btnCheck.textContent = '연결 확인';
+    });
+  }
+
+  /* ---------- 환경 ---------- */
+  function isIOS() {
+    return /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  }
+  function isStandalone() {
+    return navigator.standalone === true || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+  }
+
+  /* ================= 이벤트 ================= */
+  el.btnNav.addEventListener('click', function () {
+    showView(state.view === 'settings' ? 'write' : 'settings', true);
+  });
+  el.btnSave.addEventListener('click', save);
+  el.btnRetryToday.addEventListener('click', refreshToday);
+  el.body.addEventListener('input', function () { if (el.msgStatus.textContent) el.msgStatus.textContent = ''; scheduleDraft(); updateCount(); updatePreview(); });
+  el.title.addEventListener('input', function () { scheduleDraft(); updatePreview(); });
+  el.title.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); el.body.focus(); }
+  });
+  el.body.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); save(); }
+  });
+
+  el.btnToggleToken.addEventListener('click', function () { setTokenVisible(el.token.type === 'password'); });
+  el.btnCheck.addEventListener('click', checkConnection);
+  el.form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var cfg = readForm();
+    el.checkResults.textContent = '';
+    var err = validateSettings(cfg);
+    if (err) { el.settingsMsg.textContent = ''; addCheck(false, err); return; }
+    if (!store.set(KEY_SETTINGS, cfg)) {
+      el.storageBanner.hidden = false;
+      addCheck(false, '이 브라우저에 설정을 저장하지 못했어요. 개인정보 보호 브라우징을 끄거나 홈 화면 앱에서 다시 시도해 주세요.');
+      return;
+    }
+    if (isStandalone() && navigator.storage && navigator.storage.persist) { navigator.storage.persist().catch(function () {}); }
+    showView('write');
+    setMsg('ok', '설정을 저장했어요.');
+  });
+  el.btnLogout.addEventListener('click', function () {
+    if (!window.confirm('이 기기에서 토큰을 삭제할까요? (쓰던 글은 남아 있어요)')) return;
+    var c = loadSettings(); c.token = '';
+    var ok = store.set(KEY_SETTINGS, c);
+    el.token.value = '';
+    el.checkResults.textContent = '';
+    el.settingsMsg.textContent = ok ? '토큰을 삭제했어요. GitHub에서도 토큰을 삭제하면 더 안전해요.' : '토큰을 삭제하지 못했어요.';
+  });
+
+  // 앱으로 돌아왔을 때: 날짜가 바뀌었거나 5분 지났으면 다시 확인
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'hidden') { if (draftTimer) writeDraftNow(); return; }
+    if (state.view !== 'write' || state.saving) return;
+    var d = seoulNow().date;
+    if (d !== state.today.date || Date.now() - state.lastCheck > 5 * 60 * 1000) refreshToday();
+    else renderDate();
+  });
+  window.addEventListener('pagehide', function () { if (draftTimer) writeDraftNow(); });
+
+  // 앱을 켜 둔 채 자정(한국 시간)이 지나면 날짜와 오늘 일기 상태를 새로 확인
+  setInterval(function () {
+    if (document.visibilityState !== 'visible' || state.view !== 'write' || state.saving) return;
+    if (seoulNow().date !== state.today.date) refreshToday();
+  }, 20000);
+
+  // 저장 막대 높이만큼 본문 아래 여백 확보 (메시지가 늘어나도 가리지 않게)
+  if (window.ResizeObserver) {
+    new ResizeObserver(function () {
+      $('write-spacer').style.height = (el.savebar.offsetHeight + 16) + 'px';
+    }).observe(el.savebar);
+  }
+
+  // 키보드가 올라오면 저장 막대를 키보드 위로
+  if (window.visualViewport) {
+    var vv = window.visualViewport;
+    var updKb = function () {
+      var kb = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
+      document.documentElement.style.setProperty('--kb', kb + 'px');
+      document.documentElement.classList.toggle('kb-open', kb > 80);
+    };
+    vv.addEventListener('resize', updKb);
+    vv.addEventListener('scroll', updKb);
+  }
+
+  /* ================= 시작 ================= */
+  if (API.test) {
+    el.testBanner.hidden = false;
+    el.testBanner.textContent = '테스트 모드: ' + API.base + ' 로 연결합니다. 실제 설정·임시 저장 글과는 따로 저장돼요. 실제 토큰은 넣지 마세요.';
+  } else if (API.rejected) {
+    el.testBanner.hidden = false;
+    el.testBanner.textContent = '?api= 주소는 이 기기의 http://localhost 또는 http://127.0.0.1만 허용돼요. GitHub에 연결합니다.';
+  }
+  store.get(KEY_SETTINGS);
+  if (!storageOk) el.storageBanner.hidden = false;
+
+  renderDate();
+  restoreDraft();
+  updateCount();
+  if (isComplete(loadSettings())) showView('write'); else showView('settings');
+})();
+</script>
+</body>
+</html>
